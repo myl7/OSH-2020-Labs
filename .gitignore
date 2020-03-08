@@ -1,2 +1,6 @@
 # Lab1
 /lab1/linux/src/*
+
+!/lab1/linux/src/initrd1/
+/lab1/linux/src/initrd1/*
+!/lab1/linux/src/initrd1/init.c
