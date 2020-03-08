@@ -4,3 +4,7 @@
 !/lab1/linux/src/initrd1/
 /lab1/linux/src/initrd1/*
 !/lab1/linux/src/initrd1/init.c
+
+!/lab1/linux/src/initrd2/
+/lab1/linux/src/initrd2/*
+!/lab1/linux/src/initrd2/init.c

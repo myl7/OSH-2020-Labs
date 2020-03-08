@@ -47,6 +47,25 @@ But this is because we try to kill the init process, which caused kernel panic.
 The error info full the VGA memory-mapped screen so we can not see the required output.
 Later in initrd2 we will see it.
 
+### initrd with three programs
+
+Create the new `init.c` to use `fork`, `execl`, `waitpid` to run given programs.
+
+Add an endless loop in the tail to prevent the exiting of init process.
+
+create the device files.
+
+As I am using Manjaro, which is a kind of Linux distro, I just use `mknod` to create them.
+
+```bash
+sudo mknod dev/ttyS0 c 4 64
+sudo mknod dev/fb0 c 29 0
+```
+
+Then create initrd like above.
+
+The boot and execution is successful.
+
 ## x86 bare metal MBR program
 
 ## Questions
