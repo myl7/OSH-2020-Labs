@@ -1,4 +1,4 @@
-# OSH 2020
+# OSH 2020 Labs
 
 Labs of USTC *Operating Systems (H) 2020 Spring*.
 
