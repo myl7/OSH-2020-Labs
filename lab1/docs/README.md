@@ -68,6 +68,16 @@ The boot and execution is successful.
 
 ## x86 bare metal MBR program
 
+Like ordinary programing, write source, compile it and run it.
+
+In the source, the start part is options, then code, finally data.
+
+As nasm does not support `dup`, I use `times` to build the constants
+
+To wrap lines, use 13 ('\r') carriage return and 10 ('\n') line break.
+
+Print the line text every 18 updates which is similar to 18.2.
+
 ## Questions
 
 [linux-src]: https://www.kernel.org/
