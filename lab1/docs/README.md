@@ -80,4 +80,58 @@ Print the line text every 18 updates which is similar to 18.2.
 
 ## Questions
 
+### 1
+
+Means that the function will be loaded with modules, and you will find the compiled modules after
+kernel compilation.
+
+No.
+
+They will be loaded in userspace by the manager (e.g. udev).
+
+### 2
+
+For after that the `init` process ends, while it is the only process on the system.
+
+If it ends, the kernel can never create a new process via `fork`, so it panic.
+
+### 3
+
+For we need to ensure all used instructions should be in the executable file.
+
+No. If we do that, the call to the functions that requires dynamical library will failed,
+causing exceptions.
+
+### 4
+
+`man fakeroot` gives that:
+
+> fakeroot - run a command in an environment faking root privileges for file manipulation
+
+Which also allow ones to manipulate device file, to set the major and minor.
+
+### 5
+
+For the kernel can parse the script with a shebang, and use the right program to run the script.
+
+To make it, the function in kernel config should be enabled.
+
+### 6
+
+See [how does linux kernel prevents the BIOS system calls? - Stack Overflow][stackoverflow-1]
+
+> The BIOS is mostly available in 16 bits mode, not in the 32 or 64 bits mode of x86 on which Linux runs.
+>
+> A Linux process is running in user mode, using virtual memory, it has its own virtual address space.
+>
+> Some machine instructions (notably INT which is used to go to BIOS) are privileged so cannot be run in user mode. If you try running them in user mode, the processor makes a machine exception, and the kernel handles it by sending some signal. (some INT is also used for syscalls, but the SYSENTER instruction is preferred).
+
+### 7
+
+For GRUB2, it provides a `boot.img` image which is exactly 512 bytes.
+The image can be written to MBR and loaded when boot.
+Then as the sole function in the image is to read the first sector of the core image
+from a local disk and jump to it, GRUB2 loads other instructions to serve users.
+
 [linux-src]: https://www.kernel.org/
+[stackoverflow-1]: https://stackoverflow.com/questions/19535056/how-does-linux-kernel-prevents-the-bios-system-calls
