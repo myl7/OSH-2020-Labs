@@ -1,4 +1,4 @@
-use crate::Result;
+use crate::{Error, Result};
 use std::io::{self, BufRead};
 
 #[derive(Debug, Eq, PartialEq)]
@@ -41,7 +41,9 @@ impl Cmd {
     fn read(mut stdin: impl BufRead) -> Result<Cmd> {
         // Read one line.
         let mut cmd_str = String::new();
-        stdin.read_line(&mut cmd_str)?;
+        if stdin.read_line(&mut cmd_str)? == 0 {
+            return Err(Error::ReadFailed);
+        }
 
         // Split by whitespaces and by "|".
         // To simplify parsing, force spaces between command elements.
