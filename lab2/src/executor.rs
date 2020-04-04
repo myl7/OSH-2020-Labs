@@ -7,8 +7,12 @@ impl Cmd {
     pub fn execute(&self) -> Result<i32> {
         let mut piped = Option::<Child>::None;
         for sub_cmd in self.sub_cmds.iter() {
-            let prog = sub_cmd.args.get(0).map(|s| s.as_str()).unwrap_or("");
-            let args = &sub_cmd.args[1..];
+            let prog = sub_cmd.args.first().map(|s| s.as_str()).unwrap_or("");
+            let args = if sub_cmd.args.len() > 1 {
+                &sub_cmd.args[1..]
+            } else {
+                &[]
+            };
 
             piped = Some(
                 Command::new(prog)
@@ -45,7 +49,9 @@ impl Cmd {
             )
         }
 
-        Ok(0)
+        let exit_status = piped.unwrap().wait().map_err(|e| e.to_string())?;
+
+        Ok(exit_status.code().ok_or("Terminated by signal.")?)
     }
 }
 

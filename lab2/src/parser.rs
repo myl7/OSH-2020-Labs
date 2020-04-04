@@ -67,15 +67,14 @@ impl Cmd {
         let mut sub_cmds = sub_cmds_res?;
 
         // Update piping.
-        for i in 1..(sub_cmds.len() - 1) {
+        let len = sub_cmds.len();
+        for i in 1..(len - 1) {
             sub_cmds[i].stdin = StdinType::Piped;
             sub_cmds[i].stdout = StdoutType::Piped;
         }
-        if sub_cmds.get(0).is_some() {
+        if len > 1 {
             sub_cmds[0].stdout = StdoutType::Piped;
-        }
-        if sub_cmds.get(sub_cmds.len() - 1).is_some() {
-            sub_cmds[0].stdin = StdinType::Piped;
+            sub_cmds[len - 1].stdin = StdinType::Piped;
         }
 
         Ok(Self { sub_cmds })
@@ -103,7 +102,7 @@ impl SubCmd {
             args: args
                 .iter()
                 .enumerate()
-                .filter(|&(i, _)| skip.contains(&i))
+                .filter(|&(i, _)| !skip.contains(&i))
                 .map(|(_, &s)| s.to_string())
                 .collect(),
             stdin,
