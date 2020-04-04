@@ -1,4 +1,4 @@
-use crate::parser::{StdinType, StdoutMode, StdoutType};
+use crate::parse::{StdinType, StdoutMode, StdoutType};
 use crate::{Cmd, Result};
 use std::fs::{File, OpenOptions};
 use std::process::{Child, Command, Stdio};

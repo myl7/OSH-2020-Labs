@@ -5,7 +5,6 @@ authors = ["myl7 <myl.ustc@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+ctrlc = "3"
 dirs = "2"
-regex = "1"
-lazy_static = "1"
 quick-error = "1"
