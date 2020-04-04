@@ -8,6 +8,7 @@ extern crate lazy_static;
 extern crate quick_error;
 
 pub mod error;
+pub mod executor;
 pub mod parser;
 
 pub use error::{Error, Result};
