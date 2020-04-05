@@ -96,7 +96,7 @@ impl SubCmd {
             Some(stdout) => StdoutType::Redirected(stdout, StdoutMode::Overwrite),
             None => match Self::get_stdio(&args, ">>", &mut skip)? {
                 None => StdoutType::Inherit,
-                Some(stdout) => StdoutType::Redirected(stdout, StdoutMode::Overwrite),
+                Some(stdout) => StdoutType::Redirected(stdout, StdoutMode::Append),
             },
         };
 
