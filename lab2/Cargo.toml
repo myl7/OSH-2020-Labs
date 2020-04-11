@@ -5,10 +5,18 @@ authors = ["myl7 <myl.ustc@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+# Simple safe wrapper of signal for SIGINT.
 ctrlc = "3"
+# Rust offical suggestion to get home dir, which support different OS.
 dirs = "2"
+# Build a Error to be reported.
 quick-error = "1"
+# Provide unsafe libc functions.
 libc = "0.2"
+# Provide regex support.
 regex = "1"
+# Allow to create a safe static varible which inited at first access.
+# Offical suggection, as Rust mutable static varible is being reconsidered by the community.
 lazy_static = "1"
+# Simple safe wrapper of getpwnam, getpwuid, and getuid.
 users = "0.10"
