@@ -1,6 +1,7 @@
 extern crate ctrlc;
 extern crate dirs;
 extern crate regex;
+extern crate users;
 #[macro_use]
 extern crate quick_error;
 #[macro_use]

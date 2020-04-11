@@ -1,6 +1,9 @@
 use crate::Result;
+use regex::Regex;
 use std::io::{self, BufRead, Write};
-use std::mem;
+use std::{env, mem};
+use users;
+use users::os::unix::UserExt;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Cmd {
@@ -32,6 +35,11 @@ pub enum StdoutType {
 pub enum StdoutMode {
     Overwrite,
     Append,
+}
+
+lazy_static! {
+    static ref TILDE_RE: Regex = Regex::new(r"^~(?P<user>[a-zA-Z0-9-_]*)").unwrap();
+    static ref ENV_RE: Regex = Regex::new(r"\$(?P<var>[a-zA-Z0-9-_]+)").unwrap();
 }
 
 impl Cmd {
@@ -107,7 +115,11 @@ impl Cmd {
     fn parse(stdin: impl BufRead) -> Result<Cmd> {
         // To simplify parsing, force spaces between command elements.
         // i.e. `test > test` is ok but `test>test` not.
-        let cmd_args = Self::read_split(stdin)?;
+        let mut cmd_args = Vec::new();
+        for s in Self::read_split(stdin)? {
+            cmd_args.push(Self::insert_env(s)?);
+        }
+
         let sub_cmds_args = cmd_args.split(|s| s == "|").collect::<Vec<&[String]>>();
 
         // Build SubCmd vec.
@@ -139,6 +151,46 @@ impl Cmd {
         }
 
         Ok(Self { sub_cmds })
+    }
+
+    fn insert_env(mut s: String) -> Result<String> {
+        if let Some(cap) = TILDE_RE.captures(&s) {
+            let username = cap.name("user").unwrap().as_str();
+            let range = cap.get(0).unwrap().range();
+
+            let user = match username.as_ref() {
+                "" => users::get_user_by_uid(users::get_current_uid()),
+                username => users::get_user_by_name(&username),
+            }
+            .ok_or(format!("No such user: \"{}\".", &username))?;
+
+            let home = user
+                .home_dir()
+                .to_str()
+                .ok_or(format!(
+                    "Can not parse got home dir of {} with UTF-8.",
+                    &username
+                ))?
+                .to_string();
+            drop(cap);
+
+            s.replace_range(range, home.as_str());
+        }
+
+        let mut todo_envs = Vec::new();
+
+        for cap in ENV_RE.captures_iter(&s) {
+            let var = cap.name("var").unwrap().as_str().to_string();
+            let range = cap.get(0).unwrap().range();
+            todo_envs.push((var, range));
+        }
+
+        for (var, range) in todo_envs {
+            let value = env::var(&var).unwrap_or("".to_string());
+            s.replace_range(range, value.as_str());
+        }
+
+        Ok(s)
     }
 }
 
