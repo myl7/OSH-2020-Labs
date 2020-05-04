@@ -46,6 +46,10 @@ public:
     return serve_fd;
   }
 
+  int get_fd() {
+    return fd;
+  }
+
 private:
   int fd;
 };
