@@ -3,8 +3,6 @@ project(mchat CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
-set(CMAKE_CXX_FLAGS_DEBUG -DDEBUG)
-
 add_executable(
     mchat_mt
     src/mt/main.cpp
@@ -17,5 +15,6 @@ target_link_libraries(mchat_mt PRIVATE pthread)
 add_executable(
     mchat_mp
     src/mp/main.cpp
+    src/mp/srvsoc.hpp
 )
 target_include_directories(mchat_mp PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>)
