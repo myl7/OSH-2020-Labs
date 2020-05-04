@@ -36,7 +36,7 @@ public:
   }
 
   ssize_t send() {
-    ssize_t len = ::send(fd, &msg_q[0], msg_q.size(), MSG_DONTWAIT);
+    ssize_t len = ::send(fd, &msg_q[0], msg_q.size(), MSG_DONTWAIT ^ MSG_NOSIGNAL);
 
     if (len > 0) {
       msg_q = msg_q.substr(len);
