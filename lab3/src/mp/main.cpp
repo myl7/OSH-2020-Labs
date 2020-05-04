@@ -5,7 +5,6 @@
 #include <tuple>
 
 #include <comm/accsoc.hpp>
-#include <comm/srvsoc.hpp>
 
 extern "C" {
 #include <sys/epoll.h>

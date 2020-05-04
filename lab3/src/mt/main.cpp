@@ -6,7 +6,7 @@
 #include <queue>
 
 #include <comm/accsoc.hpp>
-#include <comm/srvsoc.hpp>
+#include <mt/srvop.hpp>
 
 constexpr in_port_t port = 8000;
 constexpr int CON_N = 32;
@@ -34,18 +34,19 @@ void clean() {
 int main() {
   std::ios::sync_with_stdio(false);
 
-  AccSoc accsoc(port);
-
   init();
-
   std::queue<std::string> q_list[CON_N] = {{}};
+
+  AccSoc accsoc(port, CON_N);
+  if (accsoc.init() != 0) {
+    exit(-1);
+  }
 
   for (int i = 0; i < CON_N; ++i) {
     fd_list[i] = accsoc.accept();
 
     std::cerr << "Accept: " << fd_list[i] << std::endl;
 
-    // Send thread.
     send_thds[i] = std::move(std::thread([&, i] {
       while (true) {
         ssize_t len;
@@ -61,18 +62,16 @@ int main() {
 
           std::cerr << "Send: " << msg << std::endl;
 
-          len = send_msg(msg + "\n", fd_list[i]);
+          len = send_msg(msg, fd_list[i]);
         } while (len > 0);
       }
     }));
 
-    // Recv thread.
     recv_thds[i] = std::move(std::thread([&, i] {
       while (true) {
-        ssize_t len;
         std::string msg;
 
-        while (std::tie(len, msg) = recv_msg(fd_list[i]), len > 0) {
+        while (msg = recv_msg(fd_list[i]), !msg.empty()) {
           std::cerr << "Recv: " << msg << std::endl;
 
           for (int j = 0; j < CON_N; ++j) {
@@ -98,7 +97,6 @@ int main() {
     recv_thds[i].join();
     send_thds[i].join();
   }
-
   clean();
 
   return 0;

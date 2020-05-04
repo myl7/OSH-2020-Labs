@@ -9,7 +9,7 @@ add_executable(
     mchat_mt
     src/mt/main.cpp
     src/comm/accsoc.hpp
-    src/comm/srvsoc.hpp
+    src/mt/srvop.hpp
 )
 target_include_directories(mchat_mt PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>)
 target_link_libraries(mchat_mt PRIVATE pthread)

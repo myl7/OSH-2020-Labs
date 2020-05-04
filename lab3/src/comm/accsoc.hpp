@@ -1,20 +1,26 @@
 #pragma once
 
-#include <stdexcept>
-
 extern "C" {
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <fcntl.h>
 }
 
-constexpr int QUEUED_CON_N = 3;
-
 class AccSoc {
+private:
+  in_port_t port;
+  int queued_con_n;
+  int fd = 0;
+  bool nonblock;
+
 public:
-  explicit AccSoc(in_port_t port) {
-    if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-      throw std::runtime_error("Can not create a new socket.");
+  AccSoc(in_port_t port_, int queued_con_n_, bool nonblock_ = false)
+      : port(port_), queued_con_n(queued_con_n_), nonblock(nonblock_) {}
+
+  int init() {
+    if ((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+      return -1;
     }
 
     sockaddr_in addr = {
@@ -24,12 +30,20 @@ public:
     };
 
     if (bind(fd, (sockaddr *)&addr, sizeof(addr))) {
-      throw std::runtime_error("Can not bind the socket to port " + std::to_string(port) + ".");
+      return -2;
     }
 
-    if (listen(fd, QUEUED_CON_N)) {
-      throw std::runtime_error("Can not listen " + std::to_string(QUEUED_CON_N) + " connections on the socket.");
+    if (listen(fd, queued_con_n)) {
+      return -3;
     }
+
+    if (nonblock) {
+      if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1) {
+        return -4;
+      }
+    }
+
+    return 0;
   }
 
   ~AccSoc() {
@@ -37,19 +51,16 @@ public:
   }
 
   int accept() {
-    auto serve_fd = ::accept(fd, nullptr, nullptr);
+    auto srv_fd = ::accept(fd, nullptr, nullptr);
 
-    if (serve_fd == -1) {
-      throw std::runtime_error("Can not accept a connection on the socket.");
+    if (srv_fd == -1) {
+      return -1;
     }
 
-    return serve_fd;
+    return srv_fd;
   }
 
   int get_fd() {
     return fd;
   }
-
-private:
-  int fd;
 };
