@@ -1,12 +1,15 @@
 use libc::c_void;
+use nix::mount::{umount2, MntFlags};
 use nix::sched::{clone, CloneFlags};
 use nix::sys::mman::{mmap, munmap, MapFlags, ProtFlags};
 use nix::sys::signal::Signal;
 use nix::sys::wait::waitpid;
-use nix::unistd::Pid;
+use nix::unistd::{pipe, Pid};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
-use std::fs::create_dir;
+use std::fs::{create_dir, remove_dir, File};
+use std::io::Read;
+use std::os::unix::io::{FromRawFd, RawFd};
 use std::ptr::{null_mut, slice_from_raw_parts_mut};
 
 const STACK_SIZE: usize = 1000 * 1000;
@@ -60,4 +63,21 @@ pub fn mktmpdir() -> String {
     tmp_root
 }
 
-// pub fn umount_bind(bind_dir: &str) {}
+pub fn mkpipe() -> (RawFd, RawFd) {
+    pipe().unwrap()
+}
+
+pub fn umount_bind(bind_dir: &str, read_fd: RawFd) {
+    let mut f: File = unsafe { File::from_raw_fd(read_fd) };
+
+    let mut buf: [u8; 1] = [0; 1];
+
+    f.read(&mut buf).unwrap();
+    if buf[0] != 0 {
+        panic!();
+    }
+
+    umount2(bind_dir, MntFlags::MNT_DETACH).unwrap();
+
+    remove_dir(bind_dir).unwrap();
+}

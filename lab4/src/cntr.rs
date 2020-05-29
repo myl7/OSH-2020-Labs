@@ -2,7 +2,9 @@ use libc::{syscall, SYS_pivot_root};
 use nix::mount::{mount, umount2, MntFlags, MsFlags};
 use nix::sys::stat::{makedev, mknod, Mode, SFlag};
 use std::ffi::CString;
-use std::fs::{create_dir, remove_dir};
+use std::fs::{create_dir, remove_dir, File};
+use std::io::Write;
+use std::os::unix::io::{FromRawFd, RawFd};
 use std::process::Command;
 
 const NONE: Option<&str> = None;
@@ -111,4 +113,12 @@ pub fn umount_host(put_old: &str) {
     umount2(put_old, MntFlags::MNT_DETACH).unwrap();
 
     remove_dir(put_old).unwrap();
+}
+
+pub fn req_umount_bind(write_fd: RawFd) {
+    let mut f: File = unsafe { File::from_raw_fd(write_fd) };
+
+    let buf: [u8; 2] = [0, '\n' as u8];
+
+    f.write(&buf).unwrap();
 }
