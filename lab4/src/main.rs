@@ -1,8 +1,11 @@
+extern crate caps;
 extern crate libc;
 extern crate nix;
 extern crate rand;
+extern crate seccomp_sys;
 
 pub mod cntr;
+pub mod consts;
 pub mod host;
 
 use std::env::current_dir;
@@ -24,6 +27,8 @@ fn main() {
         cntr::pivot_root(tmpdir);
         cntr::umount_host("/oldroot");
         cntr::req_umount_bind(fd2);
+        cntr::limit_caps();
+        cntr::limit_syscall();
 
         let files = read_dir("/")
             .unwrap()

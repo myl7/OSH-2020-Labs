@@ -1,6 +1,10 @@
+use crate::consts::{CAPS, SYSCALLS};
+use caps;
+use caps::CapSet;
 use libc::{syscall, SYS_pivot_root};
 use nix::mount::{mount, umount2, MntFlags, MsFlags};
 use nix::sys::stat::{makedev, mknod, Mode, SFlag};
+use seccomp_sys::{seccomp_init, seccomp_load, seccomp_rule_add, SCMP_ACT_ALLOW, SCMP_ACT_ERRNO};
 use std::ffi::CString;
 use std::fs::{create_dir, remove_dir, File};
 use std::io::Write;
@@ -121,4 +125,29 @@ pub fn req_umount_bind(write_fd: RawFd) {
     let buf: [u8; 2] = [0, '\n' as u8];
 
     f.write(&buf).unwrap();
+}
+
+pub fn limit_caps() {
+    caps::clear(None, CapSet::Inheritable).unwrap();
+    caps::clear(None, CapSet::Ambient).unwrap();
+
+    let child_caps = caps::read(None, CapSet::Bounding).unwrap();
+
+    for cap in child_caps {
+        if CAPS.iter().find(|i| **i == cap).is_none() {
+            caps::drop(None, CapSet::Bounding, cap).unwrap();
+        }
+    }
+}
+
+pub fn limit_syscall() {
+    unsafe {
+        let context = seccomp_init(SCMP_ACT_ERRNO(1));
+
+        for call in SYSCALLS.iter() {
+            seccomp_rule_add(context, SCMP_ACT_ALLOW, *call as i32, 0);
+        }
+
+        seccomp_load(context);
+    }
 }

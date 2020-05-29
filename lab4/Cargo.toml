@@ -11,3 +11,9 @@ libc = "0.2"
 # Raw bindings to platform APIs for Rust. For `syscall`.
 rand = "0.7"
 # Random number generators and other randomness functionality. To gen temp dir.
+caps = "^0.4.0-alpha.1"
+# A pure-Rust library to work with Linux capabilities.
+# Other than using libcap, it uses syscall directly.
+seccomp-sys = "0.1"
+# low-level bindings to libseccomp.
+# Not hot and should be replaced with my own impl, which depends on time left.
