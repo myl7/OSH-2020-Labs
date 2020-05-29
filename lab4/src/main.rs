@@ -8,13 +8,18 @@ pub mod cntr;
 pub mod consts;
 pub mod host;
 
+use nix::unistd::Pid;
 use std::env::current_dir;
-use std::fs::read_dir;
+use std::fs::{read_dir, File};
+use std::io::Read;
 
 fn main() {
     let (fd1, fd2) = host::mkpipe();
+
     let tmpdir = host::mktmpdir();
     let tmpdir_cntr = tmpdir.clone();
+
+    host::create_cgroup();
 
     let child = Box::new(move || {
         let tmpdir = tmpdir_cntr.as_str();
@@ -37,10 +42,22 @@ fn main() {
 
         println!("{:?}", files);
 
+        let mut s = String::new();
+        let mut f = File::open("/proc/1/cgroup").unwrap();
+        f.read_to_string(&mut s).unwrap();
+        println!("{}", &s);
+
         0
     });
 
+    let host_pid = Pid::this();
+
+    host::apply_cgroup_limit(host_pid);
+
     let (pid, stack) = unsafe { host::isolated_clone(child) };
+
+    host::clear_cgroup_limit();
+    host::apply_cgroup_limit(pid);
 
     host::umount_bind(tmpdir.as_str(), fd1);
 

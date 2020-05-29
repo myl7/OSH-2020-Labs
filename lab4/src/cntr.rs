@@ -8,10 +8,84 @@ use seccomp_sys::{seccomp_init, seccomp_load, seccomp_rule_add, SCMP_ACT_ALLOW, 
 use std::ffi::CString;
 use std::fs::{create_dir, remove_dir, File};
 use std::io::Write;
+use std::os::unix::fs::symlink;
 use std::os::unix::io::{FromRawFd, RawFd};
 use std::process::Command;
 
 const NONE: Option<&str> = None;
+
+fn mount_cgroup(root: &str) {
+    mount(
+        NONE,
+        (root.to_string() + "/sys/fs/cgroup").as_str(),
+        Some("tmpfs"),
+        MsFlags::MS_NOSUID | MsFlags::MS_NODEV | MsFlags::MS_NOEXEC | MsFlags::MS_RELATIME,
+        NONE,
+    )
+    .unwrap();
+
+    create_dir((root.to_string() + "/sys/fs/cgroup/memory").as_str()).unwrap();
+    create_dir((root.to_string() + "/sys/fs/cgroup/cpu,cpuacct").as_str()).unwrap();
+    create_dir((root.to_string() + "/sys/fs/cgroup/pids").as_str()).unwrap();
+    symlink(
+        (root.to_string() + "/sys/fs/cgroup/cpu,cpuacct").as_str(),
+        (root.to_string() + "/sys/fs/cgroup/cpu").as_str(),
+    )
+    .unwrap();
+
+    mount(
+        NONE,
+        (root.to_string() + "/sys/fs/cgroup").as_str(),
+        NONE,
+        MsFlags::MS_REMOUNT
+            | MsFlags::MS_RDONLY
+            | MsFlags::MS_NOSUID
+            | MsFlags::MS_NODEV
+            | MsFlags::MS_NOEXEC
+            | MsFlags::MS_RELATIME,
+        NONE,
+    )
+    .unwrap();
+
+    mount(
+        NONE,
+        (root.to_string() + "/sys/fs/cgroup/memory").as_str(),
+        Some("cgroup"),
+        MsFlags::MS_RDONLY
+            | MsFlags::MS_NOSUID
+            | MsFlags::MS_NODEV
+            | MsFlags::MS_NOEXEC
+            | MsFlags::MS_RELATIME,
+        Some("memory"),
+    )
+    .unwrap();
+
+    mount(
+        NONE,
+        (root.to_string() + "/sys/fs/cgroup/cpu,cpuacct").as_str(),
+        Some("cgroup"),
+        MsFlags::MS_RDONLY
+            | MsFlags::MS_NOSUID
+            | MsFlags::MS_NODEV
+            | MsFlags::MS_NOEXEC
+            | MsFlags::MS_RELATIME,
+        Some("cpu,cpuacct"),
+    )
+    .unwrap();
+
+    mount(
+        NONE,
+        (root.to_string() + "/sys/fs/cgroup/pids").as_str(),
+        Some("cgroup"),
+        MsFlags::MS_RDONLY
+            | MsFlags::MS_NOSUID
+            | MsFlags::MS_NODEV
+            | MsFlags::MS_NOEXEC
+            | MsFlags::MS_RELATIME,
+        Some("pids"),
+    )
+    .unwrap();
+}
 
 pub fn mount_all(root: &str, bind_root: &str) {
     // Bind mount container root to a tmpdir.
@@ -57,6 +131,9 @@ pub fn mount_all(root: &str, bind_root: &str) {
         NONE,
     )
     .unwrap();
+
+    // Mount cgroups to limit resources.
+    mount_cgroup(root);
 
     // Change host root in container namespace to private.
     mount(NONE, "/", NONE, MsFlags::MS_PRIVATE | MsFlags::MS_REC, NONE).unwrap();
