@@ -1,15 +1,25 @@
+use libc::c_void;
 use nix::sched::{clone, CloneFlags};
-use nix::sys::mman::{mmap, MapFlags, ProtFlags};
+use nix::sys::mman::{mmap, munmap, MapFlags, ProtFlags};
 use nix::sys::signal::Signal;
-use nix::sys::wait::{waitpid, WaitStatus};
-use std::ptr::null_mut;
+use nix::sys::wait::waitpid;
+use nix::unistd::Pid;
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
+use std::fs::create_dir;
+use std::ptr::{null_mut, slice_from_raw_parts_mut};
 
-const CHILD_STACK_SIZE: usize = 1000 * 1000;
+const STACK_SIZE: usize = 1000 * 1000;
 
-unsafe fn isolated_clone<F>(child_main: Box<dyn FnOnce() -> ()>) -> WaitStatus {
-    let child_stack = mmap(
+/// As chroot is not applied, the root dir has not changed.
+/// Following `pivot_root` will change it.
+///
+/// Stack allocated by `mmap` should be returned.
+/// So this is unsafe.
+pub unsafe fn isolated_clone(main: Box<dyn FnMut() -> isize>) -> (Pid, *mut c_void) {
+    let stack_bottom = mmap(
         null_mut(),
-        CHILD_STACK_SIZE,
+        STACK_SIZE,
         ProtFlags::PROT_READ | ProtFlags::PROT_WRITE,
         MapFlags::MAP_PRIVATE | MapFlags::MAP_ANONYMOUS | MapFlags::MAP_STACK,
         -1,
@@ -17,19 +27,37 @@ unsafe fn isolated_clone<F>(child_main: Box<dyn FnOnce() -> ()>) -> WaitStatus {
     )
     .unwrap();
 
-    let child_stack_start = child_stack.offset(CHILD_STACK_SIZE as isize);
+    let stack = slice_from_raw_parts_mut(stack_bottom as *mut u8, STACK_SIZE);
 
-    let child = clone(
-        child_main,
-        (child_stack_start as *mut [u8]).as_mut().unwrap(),
-        CloneFlags::CLONE_NEWPID
-            | CloneFlags::CLONE_NEWNS
-            | CloneFlags::CLONE_NEWUTS
-            | CloneFlags::CLONE_NEWIPC
-            | CloneFlags::CLONE_NEWCGROUP,
-        Some(Signal::SIGCHLD as i32),
+    (
+        clone(
+            main,
+            stack.as_mut().unwrap(),
+            CloneFlags::CLONE_NEWPID
+                | CloneFlags::CLONE_NEWNS
+                | CloneFlags::CLONE_NEWUTS
+                | CloneFlags::CLONE_NEWIPC
+                | CloneFlags::CLONE_NEWCGROUP,
+            Some(Signal::SIGCHLD as i32),
+        )
+        .unwrap(),
+        stack_bottom,
     )
-    .unwrap();
-
-    return waitpid(child, None).unwrap();
 }
+
+pub unsafe fn isolated_wait(pid: Pid, stack_bottom: *mut c_void) {
+    waitpid(pid, None).unwrap();
+    munmap(stack_bottom, STACK_SIZE).unwrap();
+}
+
+pub fn mktmpdir() -> String {
+    let rand_s = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(10)
+        .collect::<String>();
+    let tmp_root = "/tmp/root-".to_string() + rand_s.as_str();
+    create_dir(&tmp_root).unwrap();
+    tmp_root
+}
+
+// pub fn umount_bind(bind_dir: &str) {}
