@@ -143,16 +143,51 @@ pub fn apply_cgroup_limit(pid: Pid) {
         .unwrap();
 }
 
-pub fn clear_cgroup_limit() {
-    let mem_cgroup = String::from("/sys/fs/cgroup/memory/") + CGROUP_NAME;
+pub fn remove_cgroup_limit() {
+    let mut s = String::new();
 
-    File::create(mem_cgroup + "/cgroup.procs").unwrap();
+    let mem_cgroup = String::from("/sys/fs/cgroup/memory/") + CGROUP_NAME + "/cgroup.procs";
+    let parent_mem_cgroup = String::from("/sys/fs/cgroup/memory/cgroup.procs");
 
-    let cpu_cgroup = String::from("/sys/fs/cgroup/cpu/") + CGROUP_NAME;
+    s.clear();
+    File::open(&mem_cgroup)
+        .unwrap()
+        .read_to_string(&mut s)
+        .unwrap();
+    File::create(&parent_mem_cgroup)
+        .unwrap()
+        .write_all(s.as_bytes())
+        .unwrap();
 
-    File::create(cpu_cgroup.clone() + "/cgroup.procs").unwrap();
+    remove_dir(String::from("/sys/fs/cgroup/memory/") + CGROUP_NAME).unwrap();
 
-    let pid_num_cgroup = String::from("/sys/fs/cgroup/pids/") + CGROUP_NAME;
+    let cpu_cgroup = String::from("/sys/fs/cgroup/cpu/") + CGROUP_NAME + "/cgroup.procs";
+    let parent_cpu_cgroup = String::from("/sys/fs/cgroup/cpu/cgroup.procs");
 
-    File::create(pid_num_cgroup.clone() + "/cgroup.procs").unwrap();
+    s.clear();
+    File::open(&cpu_cgroup)
+        .unwrap()
+        .read_to_string(&mut s)
+        .unwrap();
+    File::create(&parent_cpu_cgroup)
+        .unwrap()
+        .write_all(s.as_bytes())
+        .unwrap();
+
+    remove_dir(String::from("/sys/fs/cgroup/cpu/") + CGROUP_NAME).unwrap();
+
+    let pid_num_cgroup = String::from("/sys/fs/cgroup/pids/") + CGROUP_NAME + "/cgroup.procs";
+    let parent_pid_num_cgroup = String::from("/sys/fs/cgroup/pids/cgroup.procs");
+
+    s.clear();
+    File::open(&pid_num_cgroup)
+        .unwrap()
+        .read_to_string(&mut s)
+        .unwrap();
+    File::create(&parent_pid_num_cgroup)
+        .unwrap()
+        .write_all(s.as_bytes())
+        .unwrap();
+
+    remove_dir(String::from("/sys/fs/cgroup/pids/") + CGROUP_NAME).unwrap();
 }

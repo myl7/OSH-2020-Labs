@@ -56,7 +56,6 @@ fn main() {
 
     let (pid, stack) = unsafe { host::isolated_clone(child) };
 
-    host::clear_cgroup_limit();
     host::apply_cgroup_limit(pid);
 
     host::umount_bind(tmpdir.as_str(), fd1);
@@ -64,4 +63,6 @@ fn main() {
     unsafe {
         host::isolated_wait(pid, stack);
     }
+
+    host::remove_cgroup_limit();
 }
